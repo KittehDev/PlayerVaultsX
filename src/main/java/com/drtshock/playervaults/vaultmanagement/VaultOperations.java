@@ -78,9 +78,6 @@ public class VaultOperations {
      * @return Whether or not they have permission.
      */
     public static boolean checkPerms(CommandSender sender, int number) {
-        if (sender.hasPermission(Permission.amount(number))) {
-            return true;
-        }
         for (int x = number; x <= PlayerVaults.getInstance().getMaxVaultAmountPermTest(); x++) {
             if (sender.hasPermission(Permission.amount(x))) {
                 return true;
