@@ -38,6 +38,8 @@ import com.drtshock.playervaults.vaultmanagement.EconomyOperations;
 import com.drtshock.playervaults.vaultmanagement.VaultManager;
 import com.drtshock.playervaults.vaultmanagement.VaultViewInfo;
 import com.google.gson.Gson;
+import com.tcoded.folialib.FoliaLib;
+import com.tcoded.folialib.impl.PlatformScheduler;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
@@ -59,7 +61,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
 import dev.kitteh.cardboardbox.CardboardBox;
 import sun.misc.Unsafe;
 
@@ -96,6 +97,8 @@ import java.util.stream.Collectors;
 public class PlayerVaults extends JavaPlugin {
     public static boolean DEBUG;
     private static PlayerVaults instance;
+    private static FoliaLib foliaLib;
+    private static PlatformScheduler scheduler;
     private final HashMap<String, SignSetInfo> setSign = new HashMap<>();
     // Player name - VaultViewInfo
     private final HashMap<String, VaultViewInfo> inVault = new HashMap<>();
@@ -127,6 +130,14 @@ public class PlayerVaults extends JavaPlugin {
         return instance;
     }
 
+    public static FoliaLib foliaLib() {
+        return foliaLib;
+    }
+
+    public static PlatformScheduler scheduler() {
+        return scheduler;
+    }
+
     public static void debug(String s, long start) {
         if (DEBUG) {
             instance.getLogger().log(Level.INFO, "{0} took {1}ms", new Object[]{s, (System.currentTimeMillis() - start)});
@@ -147,6 +158,8 @@ public class PlayerVaults extends JavaPlugin {
             return;
         }
         instance = this;
+        foliaLib = new FoliaLib(this);
+        scheduler = foliaLib.getScheduler();
         long start = System.currentTimeMillis();
         long time = System.currentTimeMillis();
         UpdateCheck update = new UpdateCheck("PlayerVaultsX", this.getDescription().getVersion(), this.getServer().getName(), this.getServer().getVersion());
@@ -191,14 +204,11 @@ public class PlayerVaults extends JavaPlugin {
             getServer().getScheduler().runTaskAsynchronously(this, new Cleanup(getConf().getPurge().getDaysSinceLastEdit()));
         }
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (saveQueued) {
-                    saveSignsFile();
-                }
+        PlayerVaults.scheduler().runTimer(() -> {
+            if (saveQueued) {
+                saveSignsFile();
             }
-        }.runTaskTimer(this, 20, 20);
+        }, 20, 20);
 
         this.metrics = new Metrics(this, 6905);
         Plugin vault = getServer().getPluginManager().getPlugin("Vault");
@@ -298,42 +308,39 @@ public class PlayerVaults extends JavaPlugin {
 
         this.updateCheck = new Gson().toJson(update);
         if (!HelpMeCommand.likesCats) return;
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                try {
-                    URL url = new URL("https://update.plugin.party/check");
-                    HttpURLConnection con = (HttpURLConnection) url.openConnection();
-                    con.setRequestMethod("POST");
-                    con.setDoOutput(true);
-                    con.setRequestProperty("Content-Type", "application/json");
-                    con.setRequestProperty("Accept", "application/json");
-                    try (OutputStream out = con.getOutputStream()) {
-                        out.write(PlayerVaults.this.updateCheck.getBytes(StandardCharsets.UTF_8));
-                    }
-                    String reply = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
-                    Response response = new Gson().fromJson(reply, Response.class);
-                    if (response.isSuccess()) {
-                        if (response.isUpdateAvailable()) {
-                            PlayerVaults.this.updateResponse = response;
-                            if (response.isUrgent()) {
-                                PlayerVaults.this.getServer().getOnlinePlayers().forEach(PlayerVaults.this::updateNotification);
-                            }
-                            PlayerVaults.this.getLogger().warning("Update available: " + response.getLatestVersion() + (response.getMessage() == null ? "" : (" - " + response.getMessage())));
-                        }
-                    } else {
-                        if (response.getMessage().equals("INVALID")) {
-                            this.cancel();
-                        } else if (response.getMessage().equals("TOO_FAST")) {
-                            // Nothing for now
-                        } else {
-                            PlayerVaults.this.getLogger().warning("Failed to check for updates: " + response.getMessage());
-                        }
-                    }
-                } catch (Exception ignored) {
+        PlayerVaults.scheduler().runTimerAsync(task -> {
+            try {
+                URL url = new URL("https://update.plugin.party/check");
+                HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                con.setRequestMethod("POST");
+                con.setDoOutput(true);
+                con.setRequestProperty("Content-Type", "application/json");
+                con.setRequestProperty("Accept", "application/json");
+                try (OutputStream out = con.getOutputStream()) {
+                    out.write(PlayerVaults.this.updateCheck.getBytes(StandardCharsets.UTF_8));
                 }
+                String reply = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
+                Response response = new Gson().fromJson(reply, Response.class);
+                if (response.isSuccess()) {
+                    if (response.isUpdateAvailable()) {
+                        PlayerVaults.this.updateResponse = response;
+                        if (response.isUrgent()) {
+                            PlayerVaults.this.getServer().getOnlinePlayers().forEach(PlayerVaults.this::updateNotification);
+                        }
+                        PlayerVaults.this.getLogger().warning("Update available: " + response.getLatestVersion() + (response.getMessage() == null ? "" : (" - " + response.getMessage())));
+                    }
+                } else {
+                    if (response.getMessage().equals("INVALID")) {
+                        task.cancel();
+                    } else if (response.getMessage().equals("TOO_FAST")) {
+                        // Nothing for now
+                    } else {
+                        PlayerVaults.this.getLogger().warning("Failed to check for updates: " + response.getMessage());
+                    }
+                }
+            } catch (Exception ignored) {
             }
-        }.runTaskTimerAsynchronously(this, 1, 20 /* ticks */ * 60 /* seconds in a minute */ * 60 /* minutes in an hour*/);
+        }, 1, 20 /* ticks */ * 60 /* seconds in a minute */ * 60 /* minutes in an hour*/);
     }
 
     private void metricsLine(String name, Callable<Integer> callable) {
