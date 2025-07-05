@@ -119,7 +119,7 @@
         <dependency>
             <groupId>net.kyori</groupId>
             <artifactId>adventure-text-serializer-gson</artifactId>
-            <version>4.23.0</version>
+            <version>4.21.0</version>
             <scope>compile</scope>
             <optional>true</optional>
             <exclusions>
@@ -144,7 +144,7 @@
         <dependency>
             <groupId>net.kyori</groupId>
             <artifactId>adventure-text-serializer-legacy</artifactId>
-            <version>4.23.0</version>
+            <version>4.21.0</version>
             <scope>compile</scope>
             <optional>true</optional>
             <exclusions>
@@ -161,7 +161,7 @@
         <dependency>
             <groupId>net.kyori</groupId>
             <artifactId>adventure-text-minimessage</artifactId>
-            <version>4.23.0</version>
+            <version>4.21.0</version>
             <scope>compile</scope>
             <optional>true</optional>
             <exclusions>
@@ -178,7 +178,7 @@
         <dependency>
             <groupId>dev.kitteh</groupId>
             <artifactId>cardboardbox</artifactId>
-            <version>3.0.4</version>
+            <version>3.0.3</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -190,7 +190,7 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.21.6-R0.1-SNAPSHOT</version>
+            <version>1.21.5-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
