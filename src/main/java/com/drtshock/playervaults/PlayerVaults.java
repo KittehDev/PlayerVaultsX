@@ -33,13 +33,13 @@ import com.drtshock.playervaults.listeners.SignListener;
 import com.drtshock.playervaults.listeners.VaultPreloadListener;
 import com.drtshock.playervaults.placeholder.Papi;
 import com.drtshock.playervaults.tasks.Cleanup;
-import com.drtshock.playervaults.util.ComponentDispatcher;
 import com.drtshock.playervaults.util.Permission;
 import com.drtshock.playervaults.vaultmanagement.EconomyOperations;
 import com.drtshock.playervaults.vaultmanagement.VaultManager;
 import com.drtshock.playervaults.vaultmanagement.VaultViewInfo;
 import com.google.gson.Gson;
 import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -117,6 +117,7 @@ public class PlayerVaults extends JavaPlugin {
     private int maxVaultAmountPermTest;
     private Metrics metrics;
     private final Config config = new Config();
+    private BukkitAudiences platform;
     private final Translation translation = new Translation(this);
     private final List<String> exceptions = new CopyOnWriteArrayList<>();
     private String updateCheck;
@@ -149,6 +150,7 @@ public class PlayerVaults extends JavaPlugin {
         long start = System.currentTimeMillis();
         long time = System.currentTimeMillis();
         UpdateCheck update = new UpdateCheck("PlayerVaultsX", this.getDescription().getVersion(), this.getServer().getName(), this.getServer().getVersion());
+        this.platform = BukkitAudiences.create(this);
         debug("adventure!", time);
         time = System.currentTimeMillis();
         loadConfig();
@@ -653,6 +655,10 @@ public class PlayerVaults extends JavaPlugin {
         return this.maxVaultAmountPermTest;
     }
 
+    public BukkitAudiences getPlatform() {
+        return this.platform;
+    }
+
     public Translation getTL() {
         return this.translation;
     }
@@ -741,14 +747,15 @@ public class PlayerVaults extends JavaPlugin {
             return;
         }
         this.told.add(player.getUniqueId());
-        ComponentDispatcher.send(player, Component.text().color(TextColor.fromHexString("#e35959"))
+        Audience audience = PlayerVaults.this.platform.player(player);
+        audience.sendMessage(Component.text().color(TextColor.fromHexString("#e35959"))
                 .content("PlayerVaultsX Update Available: " + updateResponse.getLatestVersion()));
         if (updateResponse.isUrgent()) {
-            ComponentDispatcher.send(player, Component.text().color(TextColor.fromHexString("#5E0B15"))
+            audience.sendMessage(Component.text().color(TextColor.fromHexString("#5E0B15"))
                     .content("This is an important update. Download and restart ASAP."));
         }
         if (updateResponse.getComponent() != null) {
-            ComponentDispatcher.send(player, updateResponse.getComponent());
+            audience.sendMessage(updateResponse.getComponent());
         }
     }
 

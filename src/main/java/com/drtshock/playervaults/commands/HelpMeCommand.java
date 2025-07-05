@@ -19,8 +19,8 @@
 package com.drtshock.playervaults.commands;
 
 import com.drtshock.playervaults.PlayerVaults;
-import com.drtshock.playervaults.util.ComponentDispatcher;
 import com.drtshock.playervaults.util.Permission;
+import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -63,8 +63,9 @@ public class HelpMeCommand implements CommandExecutor {
             mainInfo.append("Plugin ").append(likesCats ? "version" : "Version").append(": ").append(plugin.getDescription().getVersion()).append('\n');
             mainInfo.append("Java version: ").append(System.getProperty("java.version")).append('\n');
             if (args.length >= 1 && args[0].equalsIgnoreCase("mini")) {
+                Audience audience = PlayerVaults.getInstance().getPlatform().sender(sender);
                 for (String string : mainInfo.toString().split("\n")) {
-                    ComponentDispatcher.send(sender, MiniMessage.miniMessage().deserialize((sender instanceof Player ? "<rainbow>" : "<green>") + string));
+                    audience.sendMessage(MiniMessage.miniMessage().deserialize((sender instanceof Player ? "<rainbow>" : "<green>") + string));
                 }
                 return true;
             }
@@ -109,13 +110,14 @@ public class HelpMeCommand implements CommandExecutor {
                         new BukkitRunnable() {
                             @Override
                             public void run() {
+                                Audience audience = PlayerVaults.getInstance().getPlatform().sender(sender);
                                 if (result.getPaste().isPresent()) {
                                     String delKey = result.getPaste().get().getDeletionKey().orElse("No deletion key");
                                     String url = "https://paste.gg/anonymous/" + result.getPaste().get().getId();
-                                    ComponentDispatcher.send(sender, Component.text("URL generated: ").append(Component.text().clickEvent(ClickEvent.openUrl(url)).content(url)));
-                                    ComponentDispatcher.send(sender, MiniMessage.miniMessage().deserialize((sender instanceof Player ? "<rainbow>" : "<green>") + "Deletion key:</rainbow> " + delKey));
+                                    audience.sendMessage(Component.text("URL generated: ").append(Component.text().clickEvent(ClickEvent.openUrl(url)).content(url)));
+                                    audience.sendMessage(MiniMessage.miniMessage().deserialize((sender instanceof Player ? "<rainbow>" : "<green>") + "Deletion key:</rainbow> " + delKey));
                                 } else {
-                                    ComponentDispatcher.send(sender, MiniMessage.miniMessage().deserialize("<red>Failed to generate output. See console for details."));
+                                    audience.sendMessage(MiniMessage.miniMessage().deserialize("<red>Failed to generate output. See console for details."));
                                     PlayerVaults.getInstance().getLogger().warning("Received: " + result.getMessage());
                                 }
                             }
@@ -125,7 +127,7 @@ public class HelpMeCommand implements CommandExecutor {
                         new BukkitRunnable() {
                             @Override
                             public void run() {
-                                ComponentDispatcher.send(sender, MiniMessage.miniMessage().deserialize("<red>Failed to generate output. See console for details."));
+                                PlayerVaults.getInstance().getPlatform().sender(sender).sendMessage(MiniMessage.miniMessage().deserialize("<red>Failed to generate output. See console for details."));
                             }
                         }.runTask(PlayerVaults.getInstance());
                     }
