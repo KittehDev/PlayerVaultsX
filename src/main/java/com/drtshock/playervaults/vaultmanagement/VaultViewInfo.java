@@ -29,6 +29,7 @@ public class VaultViewInfo {
     /**
      * Makes a VaultViewInfo object. Used for opening a vault owned by the opener.
      *
+     * @param vaultName UUID (string) or legacy key
      * @param i vault number.
      */
     public VaultViewInfo(String vaultName, int i) {

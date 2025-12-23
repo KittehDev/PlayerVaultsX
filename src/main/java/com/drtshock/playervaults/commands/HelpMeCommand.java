@@ -30,7 +30,6 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.kitteh.pastegg.PasteBuilder;
 import org.kitteh.pastegg.PasteContent;
 import org.kitteh.pastegg.PasteFile;
@@ -43,6 +42,8 @@ import java.nio.file.Path;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.logging.Level;
 
 public class HelpMeCommand implements CommandExecutor {
@@ -77,60 +78,51 @@ public class HelpMeCommand implements CommandExecutor {
                 mainInfo.append("  ").append(plugin.getDescription().getAuthors()).append('\n');
             }
 
-            new BukkitRunnable() {
-                private final PasteBuilder builder = new PasteBuilder().name("PlayerVaultsX Debug")
-                        .visibility(Visibility.UNLISTED)
-                        .expires(ZonedDateTime.now(ZoneOffset.UTC).plusDays(3));
-                private int i = 0;
+            PlayerVaults.scheduler().runAsync(task -> {
+                try {
+                    final PasteBuilder builder = new PasteBuilder().name("PlayerVaultsX Debug")
+                            .visibility(Visibility.UNLISTED)
+                            .expires(ZonedDateTime.now(ZoneOffset.UTC).plusDays(3));
+                    final int[] i = new int[]{0};
 
-                private void add(String name, String content) {
-                    builder.addFile(new PasteFile(i++ + name, new PasteContent(PasteContent.ContentType.TEXT, content)));
-                }
-
-                private String getFile(Path file) {
-                    try {
-                        return new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
-                    } catch (IOException e) {
-                        return e.getMessage();
-                    }
-                }
-
-                @Override
-                public void run() {
-                    try {
-                        Path dataPath = plugin.getDataFolder().toPath();
-                        add("info.txt", mainInfo.toString());
-                        String exceptionLog = plugin.getExceptions();
-                        if (exceptionLog != null) {
-                            add("exceptions.txt", exceptionLog);
+                    final BiConsumer<String, String> add = (name, content) ->
+                            builder.addFile(new PasteFile(i[0]++ + name, new PasteContent(PasteContent.ContentType.TEXT, content)));
+                    final Function<Path, String> getFile = (file) -> {
+                        try {
+                            return new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+                        } catch (IOException e) {
+                            return e.getMessage();
                         }
-                        add("config.conf", getFile(dataPath.resolve("config.conf")));
-                        PasteBuilder.PasteResult result = builder.build();
-                        new BukkitRunnable() {
-                            @Override
-                            public void run() {
-                                if (result.getPaste().isPresent()) {
-                                    String delKey = result.getPaste().get().getDeletionKey().orElse("No deletion key");
-                                    String url = "https://paste.gg/anonymous/" + result.getPaste().get().getId();
-                                    ComponentDispatcher.send(sender, Component.text("URL generated: ").append(Component.text().clickEvent(ClickEvent.openUrl(url)).content(url)));
-                                    ComponentDispatcher.send(sender, MiniMessage.miniMessage().deserialize((sender instanceof Player ? "<rainbow>" : "<green>") + "Deletion key:</rainbow> " + delKey));
-                                } else {
-                                    ComponentDispatcher.send(sender, MiniMessage.miniMessage().deserialize("<red>Failed to generate output. See console for details."));
-                                    PlayerVaults.getInstance().getLogger().warning("Received: " + result.getMessage());
-                                }
-                            }
-                        }.runTask(PlayerVaults.getInstance());
-                    } catch (Exception e) {
-                        PlayerVaults.getInstance().getLogger().log(Level.SEVERE, "Failed to execute debug command", e);
-                        new BukkitRunnable() {
-                            @Override
-                            public void run() {
-                                ComponentDispatcher.send(sender, MiniMessage.miniMessage().deserialize("<red>Failed to generate output. See console for details."));
-                            }
-                        }.runTask(PlayerVaults.getInstance());
+                    };
+
+                    Path dataPath = plugin.getDataFolder().toPath();
+                    add.accept("info.txt", mainInfo.toString());
+                    String exceptionLog = plugin.getExceptions();
+                    if (exceptionLog != null) {
+                        add.accept("exceptions.txt", exceptionLog);
                     }
+                    add.accept("config.conf", getFile.apply(dataPath.resolve("config.conf")));
+
+                    PasteBuilder.PasteResult result = builder.build();
+
+                    PlayerVaults.scheduler().runNextTick(t -> {
+                        if (result.getPaste().isPresent()) {
+                            String delKey = result.getPaste().get().getDeletionKey().orElse("No deletion key");
+                            String url = "https://paste.gg/anonymous/" + result.getPaste().get().getId();
+                            ComponentDispatcher.send(sender, Component.text("URL generated: ").append(Component.text().clickEvent(ClickEvent.openUrl(url)).content(url)));
+                            ComponentDispatcher.send(sender, MiniMessage.miniMessage().deserialize((sender instanceof Player ? "<rainbow>" : "<green>") + "Deletion key:</rainbow> " + delKey));
+                        } else {
+                            ComponentDispatcher.send(sender, MiniMessage.miniMessage().deserialize("<red>Failed to generate output. See console for details."));
+                            PlayerVaults.getInstance().getLogger().warning("Received: " + result.getMessage());
+                        }
+                    });
+                } catch (Exception e) {
+                    PlayerVaults.getInstance().getLogger().log(Level.SEVERE, "Failed to execute debug command", e);
+                    PlayerVaults.scheduler().runNextTick(t ->
+                            ComponentDispatcher.send(sender, MiniMessage.miniMessage().deserialize("<red>Failed to generate output. See console for details."))
+                    );
                 }
-            }.runTaskAsynchronously(PlayerVaults.getInstance());
+            });
         }
         return true;
     }
