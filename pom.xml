@@ -28,7 +28,7 @@
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
+                <version>3.14.0</version>
                 <configuration>
                     <release>21</release>
                 </configuration>
@@ -55,6 +55,10 @@
                         <relocation>
                             <pattern>net.kyori</pattern>
                             <shadedPattern>com.drtshock.playervaults.lib.net.kyori</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>com.tcoded.folialib</pattern>
+                            <shadedPattern>com.drtshock.playervaults.lib.folialib</shadedPattern>
                         </relocation>
                         <relocation>
                             <pattern>org.kitteh</pattern>
@@ -94,6 +98,10 @@
         <repository>
             <id>spigot-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
+        </repository>
+        <repository>
+            <id>tcoded-releases</id>
+            <url>https://repo.tcoded.com/releases</url>
         </repository>
         <repository>
             <id>placeholderapi</id>
@@ -192,6 +200,12 @@
             <artifactId>spigot-api</artifactId>
             <version>1.21.10-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.tcoded</groupId>
+            <artifactId>FoliaLib</artifactId>
+            <version>0.5.1</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.googlecode.json-simple</groupId>
