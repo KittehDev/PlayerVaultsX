@@ -70,6 +70,11 @@ public class ConsoleCommand implements CommandExecutor {
                         sender.sendMessage("FAILED TO LOOK UP UUID FOR NAME");
                         return true;
                     }
+                    if (PlayerVaults.getInstance().getInVault().containsKey(plr.getUniqueId().toString())) {
+                        // don't let them open another vault.
+                        sender.sendMessage("ALREADY HAS A VAULT OPEN: " + plr.getName());
+                        return true;
+                    }
                     int number;
                     try {
                         number = Integer.parseInt(vaultId);
