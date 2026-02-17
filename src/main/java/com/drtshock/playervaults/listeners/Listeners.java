@@ -63,6 +63,12 @@ public class Listeners implements Listener {
     public void saveVault(Player player, Inventory inventory) {
         VaultViewInfo info = plugin.getInVault().remove(player.getUniqueId().toString());
         if (info != null) {
+            if (inventory.getViewers().size() <= 1) {
+                vaultManager.saveVault(inventory, info.getVaultName(), info.getNumber());
+                plugin.getOpenInventories().remove(info.toString());
+                return;
+            }
+
             boolean badDay = false;
             if (!(inventory.getHolder() instanceof VaultHolder)) {
                 PlayerVaults.getInstance().getLogger().severe("Encountered lost vault situation for player '" + player.getName() + "', instead finding a '" + inventory.getType() + "' - attempting to save the vault if no viewers present");
@@ -115,7 +121,17 @@ public class Listeners implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onClose(InventoryCloseEvent event) {
-        saveVault((Player) event.getPlayer(), event.getInventory());
+        Player player = (Player) event.getPlayer();
+        VaultViewInfo info = plugin.getInVault().get(player.getUniqueId().toString());
+
+        // If the player is still inside the inventory
+        if (info != null) {
+            // Put the items to a new inventory, so the system can save and the garbage collector can move faster
+            Inventory inv = Bukkit.createInventory(null, event.getInventory().getSize());
+            inv.setContents(event.getInventory().getContents().clone());
+
+            saveVault(player, inv);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)

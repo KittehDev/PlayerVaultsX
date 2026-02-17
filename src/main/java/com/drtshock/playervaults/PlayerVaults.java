@@ -198,6 +198,24 @@ public class PlayerVaults extends JavaPlugin {
             }
         }.runTaskTimer(this, 20, 20);
 
+        // Force save after an amount of time
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                long now = System.currentTimeMillis();
+                inVault.forEach((uuid, info) -> {
+                    Player p = Bukkit.getPlayer(UUID.fromString(uuid));
+                    if (p != null && p.isOnline()) {
+                        Inventory inv = p.getOpenInventory().getTopInventory();
+                        if (inv != null && inv.getViewers().size() >= 1) {
+                            // Player is still in the vault, force save after a timeout
+                            VaultManager.getInstance().saveVault(inv, p.getUniqueId().toString(), info.getNumber());
+                        }
+                    }
+                });
+            }
+        }.runTaskTimer(this, 6000, 6000);
+
         this.metrics = new Metrics(this, 6905);
         Plugin vault = getServer().getPluginManager().getPlugin("Vault");
         this.metricsDrillPie("vault", () -> this.metricsPluginInfo(vault));

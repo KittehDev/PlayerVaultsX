@@ -36,6 +36,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 
 public class VaultManager {
@@ -45,6 +47,11 @@ public class VaultManager {
     private final File directory = PlayerVaults.getInstance().getVaultData();
     private final Map<String, YamlConfiguration> cachedVaultFiles = new ConcurrentHashMap<>();
     private final PlayerVaults plugin;
+
+    // Variables for async saving
+    private final ExecutorService saveExecutor = Executors.newFixedThreadPool(2);
+    private final Map<String, Object> playerLocks = new ConcurrentHashMap<>();
+    private final Map<String, Long> lastSaveTime = new ConcurrentHashMap<>();
 
     public VaultManager(PlayerVaults plugin) {
         this.plugin = plugin;
@@ -68,11 +75,31 @@ public class VaultManager {
      * @param number The vault number.
      */
     public void saveVault(Inventory inventory, String target, int number) {
+        Long lastSave = lastSaveTime.get(target);
+        // Don't allow saves to fast, this prevents duping
+        if (lastSave != null && System.currentTimeMillis() - lastSave < 500) {
+            throw new IllegalStateException("Vault save too fast - possible dupe attempt");
+        }
+
+        for (int i = 0; i < inventory.getSize(); i++) {
+            if (inventory.getItem(i) != null) {
+                int amount = inventory.getItem(i).getAmount();
+                // If amount is higher or lower than possible, don't allow it
+                if (amount < 1 || amount > 64) {
+                    throw new IllegalStateException("Impossible item amount: " + amount);
+                }
+            }
+        }
+
         YamlConfiguration yaml = getPlayerVaultFile(target, true);
         int size = VaultOperations.getMaxVaultSize(target);
         String serialized = CardboardBoxSerialization.toStorage(inventory, target);
+
         yaml.set(String.format(VAULTKEY, number), serialized);
-        saveFileSync(target, yaml);
+        yaml.set("vault_version_" + number, System.currentTimeMillis());
+
+        lastSaveTime.put(target, System.currentTimeMillis());
+        saveFileAsync(target, yaml);
     }
 
     /**
@@ -355,23 +382,47 @@ public class VaultManager {
         return YamlConfiguration.loadConfiguration(file);
     }
 
-    public void saveFileSync(final String holder, final YamlConfiguration yaml) {
-        if (cachedVaultFiles.containsKey(holder)) {
-            cachedVaultFiles.put(holder, yaml);
-        }
+    public void saveFileAsync(final String holder, final YamlConfiguration yaml) {
+        Object lock = playerLocks.computeIfAbsent(holder, k -> new Object());
 
-        final boolean backups = PlayerVaults.getInstance().isBackupsEnabled();
-        final File backupsFolder = PlayerVaults.getInstance().getBackupsFolder();
-        final File file = new File(directory, holder + ".yml");
-        if (file.exists() && backups) {
-            file.renameTo(new File(backupsFolder, holder + ".yml"));
-        }
-        try {
-            yaml.save(file);
-        } catch (IOException e) {
-            PlayerVaults.getInstance().addException(new IllegalStateException("Failed to save vault file for: " + holder, e));
-            PlayerVaults.getInstance().getLogger().log(Level.SEVERE, "Failed to save vault file for: " + holder, e);
-        }
-        PlayerVaults.debug("Saved vault for " + holder);
+        saveExecutor.execute(() -> {
+            synchronized (lock) {
+                // Save to a different temp file to prevent data loss
+                File tempFile = new File(directory, holder + ".yml.tmp");
+                try {
+                    yaml.save(tempFile);
+
+                    final boolean backups = PlayerVaults.getInstance().isBackupsEnabled();
+                    final File backupsFolder = PlayerVaults.getInstance().getBackupsFolder();
+                    final File file = new File(directory, holder + ".yml");
+
+                    if (file.exists() && backups) {
+                        File backup = new File(backupsFolder, holder + ".yml");
+                        if (backup.exists()) backup.delete();
+                        file.renameTo(backup);
+                    }
+
+                    if (!tempFile.renameTo(file)) {
+                        throw new IOException("Failed to rename temp file");
+                    }
+
+                    YamlConfiguration verify = YamlConfiguration.loadConfiguration(file);
+                    if (verify.getKeys(false).isEmpty()) {
+                        throw new IllegalStateException("Vault file is empty after save");
+                    }
+
+                    PlayerVaults.debug("Saved vault for " + holder);
+
+                } catch (IOException e) {
+                    PlayerVaults.getInstance().addException(
+                            new IllegalStateException("Failed to save vault file for: " + holder, e));
+                    PlayerVaults.getInstance().getLogger().log(Level.SEVERE,
+                            "Failed to save vault file for: " + holder, e);
+                } finally {
+                    // Delete temp file if been saved
+                    if (tempFile.exists()) tempFile.delete();
+                }
+            }
+        });
     }
 }
