@@ -6,6 +6,7 @@ version: ${project.version}
 main: com.drtshock.playervaults.PlayerVaults
 softdepend: [Vault, Multiverse-Inventories, PlaceholderAPI]
 api-version: 1.21.10
+folia-supported: true
 
 commands:
   pv:

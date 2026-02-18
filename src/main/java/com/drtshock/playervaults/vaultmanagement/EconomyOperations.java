@@ -123,7 +123,7 @@ public class EconomyOperations {
             return true;
         }
 
-        File playerFile = new File(PlayerVaults.getInstance().getVaultData(), player.getUniqueId().toString() + ".yml");
+        File playerFile = new File(PlayerVaults.getInstance().getVaultData(), player.getUniqueId() + ".yml");
         if (playerFile.exists()) {
             YamlConfiguration playerData = YamlConfiguration.loadConfiguration(playerFile);
             if (playerData.getString("vault" + number) == null) {
