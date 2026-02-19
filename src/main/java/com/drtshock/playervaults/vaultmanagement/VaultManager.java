@@ -51,6 +51,7 @@ public class VaultManager {
     // Variables for async saving
     private final ExecutorService saveExecutor = Executors.newFixedThreadPool(2);
     private final Map<String, Object> playerLocks = new ConcurrentHashMap<>();
+    // Key is "<target>:<vaultNumber>" (e.g. "Steve:1")
     private final Map<String, Long> lastSaveTime = new ConcurrentHashMap<>();
 
     public VaultManager(PlayerVaults plugin) {
@@ -68,6 +69,13 @@ public class VaultManager {
     }
 
     /**
+     * Per-player-vault lock key: "<playerName>:<vaultNumber>".
+     */
+    private static String lockKey(String target, int number) {
+        return target + ":" + number;
+    }
+
+    /**
      * Saves the inventory to the specified player and vault number.
      *
      * @param inventory The inventory to be saved.
@@ -75,30 +83,39 @@ public class VaultManager {
      * @param number The vault number.
      */
     public void saveVault(Inventory inventory, String target, int number) {
-        Long lastSave = lastSaveTime.get(target);
+        String key = lockKey(target, number);
+        Long lastSave = lastSaveTime.get(key);
+
         // Don't allow saves to fast, this prevents duping
         if (lastSave != null && System.currentTimeMillis() - lastSave < 500) {
-            throw new IllegalStateException("Vault save too fast - possible dupe attempt");
+            PlayerVaults.getInstance().getLogger().warning(
+                    "Save throttled for " + key + " — possible dupe attempt.");
+            return;
         }
 
-        for (int i = 0; i < inventory.getSize(); i++) {
-            if (inventory.getItem(i) != null) {
-                int amount = inventory.getItem(i).getAmount();
-                // If amount is higher or lower than possible, don't allow it
-                if (amount < 1 || amount > 64) {
-                    throw new IllegalStateException("Impossible item amount: " + amount);
-                }
+        ItemStack[] contents = inventory.getContents();
+        for (int i = 0; i < contents.length; i++) {
+            if (contents[i] == null) continue;
+            int amount = contents[i].getAmount();
+            int max    = contents[i].getMaxStackSize();
+            if (amount < 1 || amount > max) {
+                contents[i] = contents[i].clone();
+                contents[i].setAmount(Math.max(1, Math.min(amount, max)));
             }
         }
 
+        lastSaveTime.put(key, System.currentTimeMillis());
+
+        // Snapshot into a dedicated inventory
+        Inventory snapshot = Bukkit.createInventory(null, inventory.getSize());
+        snapshot.setContents(contents);
+
         YamlConfiguration yaml = getPlayerVaultFile(target, true);
-        int size = VaultOperations.getMaxVaultSize(target);
-        String serialized = CardboardBoxSerialization.toStorage(inventory, target);
+        String serialized = CardboardBoxSerialization.toStorage(snapshot, target);
 
         yaml.set(String.format(VAULTKEY, number), serialized);
         yaml.set("vault_version_" + number, System.currentTimeMillis());
 
-        lastSaveTime.put(target, System.currentTimeMillis());
         saveFileAsync(target, yaml);
     }
 
@@ -387,14 +404,16 @@ public class VaultManager {
 
         saveExecutor.execute(() -> {
             synchronized (lock) {
-                // Save to a different temp file to prevent data loss
                 File tempFile = new File(directory, holder + ".yml.tmp");
+                File file = new File(directory, holder + ".yml");
+
                 try {
                     yaml.save(tempFile);
 
+                    if (tempFile.length() == 0) throw new IOException("Temp file is empty — aborting save for " + holder);
+
                     final boolean backups = PlayerVaults.getInstance().isBackupsEnabled();
                     final File backupsFolder = PlayerVaults.getInstance().getBackupsFolder();
-                    final File file = new File(directory, holder + ".yml");
 
                     if (file.exists() && backups) {
                         File backup = new File(backupsFolder, holder + ".yml");
@@ -403,17 +422,19 @@ public class VaultManager {
                     }
 
                     if (!tempFile.renameTo(file)) {
-                        throw new IOException("Failed to rename temp file");
+                        try { Thread.sleep(20); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                        if (!tempFile.renameTo(file))
+                            throw new IOException("Failed to rename temp file for " + holder + " after retry");
                     }
 
                     YamlConfiguration verify = YamlConfiguration.loadConfiguration(file);
-                    if (verify.getKeys(false).isEmpty()) {
-                        throw new IllegalStateException("Vault file is empty after save");
-                    }
+                    boolean hasVaultData = verify.getKeys(false).stream()
+                            .anyMatch(k -> k.startsWith("vault"));
+                    if (!hasVaultData) throw new IllegalStateException("Vault data missing after save for " + holder);
 
                     PlayerVaults.debug("Saved vault for " + holder);
 
-                } catch (IOException e) {
+                } catch (IOException | IllegalStateException e) {
                     PlayerVaults.getInstance().addException(
                             new IllegalStateException("Failed to save vault file for: " + holder, e));
                     PlayerVaults.getInstance().getLogger().log(Level.SEVERE,
