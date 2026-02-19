@@ -3,18 +3,14 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
+import com.drtshock.playervaults.lib.com.typesafe.config.ConfigOrigin;
+
+import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigOrigin;
 
 /**
  * Internal implementation detail, not ABI stable, do not touch.

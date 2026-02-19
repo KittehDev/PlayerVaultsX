@@ -28,7 +28,6 @@ import com.drtshock.playervaults.vaultmanagement.VaultViewInfo;
 import org.bukkit.Bukkit;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -44,50 +43,91 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Listeners implements Listener {
 
     public final PlayerVaults plugin;
     private final VaultManager vaultManager = VaultManager.getInstance();
 
+    //  Guards against double-saves per player
+    private final Set<UUID> savePending = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
     public Listeners(PlayerVaults playerVaults) {
         this.plugin = playerVaults;
     }
 
     public void saveVault(Player player, Inventory inventory) {
-        VaultViewInfo info = plugin.getInVault().remove(player.getUniqueId().toString());
-        if (info != null) {
-            boolean badDay = false;
-            if (!(inventory.getHolder() instanceof VaultHolder)) {
-                PlayerVaults.getInstance().getLogger().severe("Encountered lost vault situation for player '" + player.getName() + "', instead finding a '" + inventory.getType() + "' - attempting to save the vault if no viewers present");
-                badDay = true;
-                inventory = plugin.getOpenInventories().get(info.toString());
-                if (inventory == null) {
-                    PlayerVaults.getInstance().getLogger().severe("Could not find inventory");
-                    return;
-                }
-            }
-            Inventory inv = Bukkit.createInventory(null, inventory.getSize());
-            inv.setContents(inventory.getContents().clone());
+        UUID uuid = player.getUniqueId();
 
-            PlayerVaults.debug(inventory.getType() + " " + inventory.getClass().getSimpleName());
-            if (inventory.getViewers().size() <= 1) {
-                PlayerVaults.debug("Saving!");
-                vaultManager.saveVault(inv, info.getVaultName(), info.getNumber());
-                plugin.getOpenInventories().remove(info.toString());
-            } else {
-                if (badDay) {
-                    PlayerVaults.getInstance().getLogger().severe("Viewers size >0: " + inventory.getViewers().stream().map(HumanEntity::getName).collect(Collectors.joining(", ")));
-                }
-                PlayerVaults.debug("Other viewers found, not saving! " + inventory.getViewers().stream().map(HumanEntity::getName).collect(Collectors.joining(" ")));
-            }
+        if (!savePending.add(uuid)) {
+            PlayerVaults.debug("Save already pending for " + player.getName() + ", skipping duplicate.");
+            return;
         }
+
+        try {
+            VaultViewInfo info = plugin.getInVault().remove(uuid.toString());
+            if (info == null) return;
+
+            // This prevents ghost-item exploits
+            final ItemStack[] snapshot = snapshotInventory(inventory, info, player);
+            if (snapshot == null) {
+                // Re-insert info so a future close/quit can retry
+                plugin.getInVault().put(uuid.toString(), info);
+                return;
+            }
+
+            plugin.getOpenInventories().remove(info.toString());
+
+            // Build a clean inventory from the validated snapshot and hand it to the manager
+            Inventory saveInv = Bukkit.createInventory(null, inventory.getSize());
+            saveInv.setContents(snapshot);
+
+            vaultManager.saveVault(saveInv, info.getVaultName(), info.getNumber());
+        } finally {
+            // Always release the guard so future opens of this vault work correctly
+            savePending.remove(uuid);
+        }
+    }
+
+    private ItemStack[] snapshotInventory(Inventory inventory, VaultViewInfo info, Player player) {
+        if (inventory.getViewers().size() > 1) {
+            Inventory tracked = plugin.getOpenInventories().get(info.toString());
+            if (tracked == null) {
+                PlayerVaults.getInstance().getLogger().severe(
+                        "Could not resolve shared inventory for " + player.getName());
+                return null;
+            }
+            // Don't save, the last viewer to close will handle it
+            PlayerVaults.debug("Other viewers present for " + player.getName() + ", deferring save.");
+            return null;
+        }
+
+        if (!(inventory.getHolder() instanceof VaultHolder) && inventory.getViewers().size() > 0) {
+            PlayerVaults.getInstance().getLogger().warning(
+                    "Unexpected holder type for " + player.getName() + ": " + inventory.getType() +
+                            " — contents will still be saved.");
+        }
+
+        ItemStack[] raw = inventory.getContents();
+        ItemStack[] sanitised = new ItemStack[raw.length];
+
+        for (int i = 0; i < raw.length; i++) {
+            ItemStack item = raw[i];
+            if (item == null) {
+                sanitised[i] = null;
+                continue;
+            }
+            int amount = item.getAmount();
+            int maxStack = item.getMaxStackSize();
+            if (amount < 1 || amount > maxStack) {
+                ItemStack clamped = item.clone();
+                clamped.setAmount(Math.max(1, Math.min(amount, maxStack)));
+                sanitised[i] = clamped;
+            } else sanitised[i] = item.clone();
+        }
+        return sanitised;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -97,72 +137,92 @@ public class Listeners implements Listener {
         }
         Player p = event.getPlayer();
         // The player will either quit, die, or close the inventory at some point
-        if (plugin.getInVault().containsKey(p.getUniqueId().toString())) {
-            return;
-        }
-        saveVault(p, p.getOpenInventory().getTopInventory());
+        if (plugin.getInVault().containsKey(p.getUniqueId().toString()))
+            p.closeInventory();
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onQuit(PlayerQuitEvent event) {
-        saveVault(event.getPlayer(), event.getPlayer().getOpenInventory().getTopInventory());
+        Player player = event.getPlayer();
+        if (plugin.getInVault().containsKey(player.getUniqueId().toString())) {
+            saveVault(player, player.getOpenInventory().getTopInventory());
+        }
+        savePending.remove(player.getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onDeath(PlayerDeathEvent event) {
-        saveVault(event.getEntity(), event.getEntity().getOpenInventory().getTopInventory());
+        Player player = event.getEntity();
+        if (plugin.getInVault().containsKey(player.getUniqueId().toString())) {
+            saveVault(player, player.getOpenInventory().getTopInventory());
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onClose(InventoryCloseEvent event) {
-        saveVault((Player) event.getPlayer(), event.getInventory());
+        Player player = (Player) event.getPlayer();
+        VaultViewInfo info = plugin.getInVault().get(player.getUniqueId().toString());
+
+        // If the player is still inside the inventory
+        if (info != null) {
+
+            // Put the items to a new inventory, so the system can save and the garbage collector can move faster
+            Inventory inv = Bukkit.createInventory(null, event.getInventory().getSize());
+            inv.setContents(event.getInventory().getContents().clone());
+
+            saveVault(player, inv);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onInteractEntity(PlayerInteractEntityEvent event) {
         Player player = event.getPlayer();
         EntityType type = event.getRightClicked().getType();
-        if ((type == EntityType.VILLAGER || type == EntityType.MINECART) && PlayerVaults.getInstance().getInVault().containsKey(player.getUniqueId().toString())) {
+        if ((type == EntityType.VILLAGER || type == EntityType.MINECART)
+                && plugin.getInVault().containsKey(player.getUniqueId().toString())) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player)) {
+        if (!(event.getWhoClicked() instanceof Player player))
+            return;
+
+        Inventory clickedInventory = event.getClickedInventory();
+        if (clickedInventory == null) return;
+
+        VaultViewInfo info = plugin.getInVault().get(player.getUniqueId().toString());
+        if (info == null) return;
+
+        String inventoryTitle = event.getView().getTitle();
+        String title = this.plugin.getVaultTitle(String.valueOf(info.getNumber()));
+        if (!inventoryTitle.equalsIgnoreCase(title))
+            return;
+
+        // This prevents duplication via SWAP_OFFHAND or hotbar-number key
+        ItemStack[] items = new ItemStack[2];
+        items[0] = event.getCurrentItem();
+
+        String clickName = event.getClick().name();
+        if (event.getHotbarButton() > -1) {
+            items[1] = player.getInventory().getItem(event.getHotbarButton());
+        } else if (clickName.equals("SWAP_OFFHAND")) {
+            items[1] = player.getInventory().getItemInOffHand();
+        }
+
+        // Cancel all clicks to prevent ghost items being inserted after snapshot
+        if (savePending.contains(player.getUniqueId())) {
+            event.setCancelled(true);
             return;
         }
 
-        Player player = (Player) event.getWhoClicked();
-
-        Inventory clickedInventory = event.getClickedInventory();
-        if (clickedInventory != null) {
-            VaultViewInfo info = PlayerVaults.getInstance().getInVault().get(player.getUniqueId().toString());
-            if (info != null) {
-                int num = info.getNumber();
-                String inventoryTitle = event.getView().getTitle();
-                String title = this.plugin.getVaultTitle(String.valueOf(num));
-                if (inventoryTitle.equalsIgnoreCase(title)) {
-                    ItemStack[] items = new ItemStack[2];
-                    items[0] = event.getCurrentItem();
-                    if (event.getHotbarButton() > -1 && event.getWhoClicked().getInventory().getItem(event.getHotbarButton()) != null) {
-                        items[1] = event.getWhoClicked().getInventory().getItem(event.getHotbarButton());
-                    }
-                    if (event.getClick().name().equals("SWAP_OFFHAND")) {
-                        items[1] = event.getWhoClicked().getInventory().getItemInOffHand();
-                    }
-
-                    if (!player.hasPermission(Permission.BYPASS_BLOCKED_ITEMS)) {
-                        for (ItemStack item : items) {
-                            if (item == null) {
-                                continue;
-                            }
-                            if (this.isBlocked(player, item, info)) {
-                                event.setCancelled(true);
-                                return;
-                            }
-                        }
-                    }
+        if (!player.hasPermission(Permission.BYPASS_BLOCKED_ITEMS)) {
+            for (ItemStack item : items) {
+                if (item == null) continue;
+                if (this.isBlocked(player, item, info)) {
+                    event.setCancelled(true);
+                    return;
                 }
             }
         }
@@ -170,28 +230,31 @@ public class Listeners implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onDrag(InventoryDragEvent event) {
-        if (!(event.getWhoClicked() instanceof Player)) {
+        if (!(event.getWhoClicked() instanceof Player player))
+            return;
+
+        Inventory draggedInventory = event.getInventory();
+        if (draggedInventory == null) return;
+
+        VaultViewInfo info = plugin.getInVault().get(player.getUniqueId().toString());
+        if (info == null) return;
+
+        String inventoryTitle = event.getView().getTitle();
+        String title = this.plugin.getVaultTitle(String.valueOf(info.getNumber()));
+        if (inventoryTitle == null || !inventoryTitle.equalsIgnoreCase(title))
+            return;
+
+        // Block drags while a save is pending to prevent ghost-item insertion.
+        if (savePending.contains(player.getUniqueId())) {
+            event.setCancelled(true);
             return;
         }
 
-        Player player = (Player) event.getWhoClicked();
-
-        Inventory clickedInventory = event.getInventory();
-        if (clickedInventory != null) {
-            VaultViewInfo info = PlayerVaults.getInstance().getInVault().get(player.getUniqueId().toString());
-            if (info != null) {
-                int num = info.getNumber();
-                String inventoryTitle = event.getView().getTitle();
-                String title = this.plugin.getVaultTitle(String.valueOf(num));
-                if ((inventoryTitle != null && inventoryTitle.equalsIgnoreCase(title)) && event.getNewItems() != null) {
-                    if (!player.hasPermission(Permission.BYPASS_BLOCKED_ITEMS)) {
-                        for (ItemStack item : event.getNewItems().values()) {
-                            if (this.isBlocked(player, item, info)) {
-                                event.setCancelled(true);
-                                return;
-                            }
-                        }
-                    }
+        if (!player.hasPermission(Permission.BYPASS_BLOCKED_ITEMS) && event.getNewItems() != null) {
+            for (ItemStack item : event.getNewItems().values()) {
+                if (this.isBlocked(player, item, info)) {
+                    event.setCancelled(true);
+                    return;
                 }
             }
         }

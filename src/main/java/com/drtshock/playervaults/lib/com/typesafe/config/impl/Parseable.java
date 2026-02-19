@@ -3,33 +3,12 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FilterReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.*;
-
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigIncludeContext;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigObject;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigOrigin;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigParseOptions;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigParseable;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigSyntax;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigValue;
+import com.drtshock.playervaults.lib.com.typesafe.config.*;
 import com.drtshock.playervaults.lib.com.typesafe.config.parser.ConfigDocument;
+
+import java.io.*;
+import java.net.*;
+import java.util.*;
 
 /**
  * Internal implementation detail, not ABI stable, do not touch.

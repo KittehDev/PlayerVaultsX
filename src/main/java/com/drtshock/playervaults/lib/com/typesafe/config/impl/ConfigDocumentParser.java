@@ -3,13 +3,9 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
-import java.util.*;
+import com.drtshock.playervaults.lib.com.typesafe.config.*;
 
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigOrigin;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigParseOptions;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigSyntax;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigValueType;
+import java.util.*;
 
 final class ConfigDocumentParser {
     static ConfigNodeRoot parse(Iterator<Token> tokens, ConfigOrigin origin, ConfigParseOptions options) {

@@ -25,7 +25,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.util.io.BukkitObjectInputStream;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;

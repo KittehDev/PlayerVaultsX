@@ -3,11 +3,11 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config;
 
+import com.drtshock.playervaults.lib.com.typesafe.config.impl.ConfigImplUtil;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
-
-import com.drtshock.playervaults.lib.com.typesafe.config.impl.ConfigImplUtil;
 
 /**
  * All exceptions thrown by the library are subclasses of

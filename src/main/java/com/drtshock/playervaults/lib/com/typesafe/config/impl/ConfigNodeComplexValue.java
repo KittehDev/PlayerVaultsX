@@ -3,7 +3,8 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
 
 abstract class ConfigNodeComplexValue extends AbstractConfigNodeValue {
     final protected ArrayList<AbstractConfigNode> children;

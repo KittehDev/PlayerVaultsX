@@ -3,11 +3,11 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
-import java.io.ObjectStreamException;
-import java.io.Serializable;
-
 import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
 import com.drtshock.playervaults.lib.com.typesafe.config.ConfigOrigin;
+
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 
 abstract class ConfigNumber extends AbstractConfigValue implements Serializable {
 

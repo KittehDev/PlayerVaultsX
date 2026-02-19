@@ -3,9 +3,10 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
-import java.util.*;
-
 import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
+
+import java.util.Iterator;
+import java.util.List;
 
 final class Path {
 

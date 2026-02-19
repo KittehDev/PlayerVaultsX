@@ -1,8 +1,8 @@
 package com.drtshock.playervaults.lib.com.typesafe.config;
 
-import java.net.URL;
-
 import com.drtshock.playervaults.lib.com.typesafe.config.impl.ConfigImpl;
+
+import java.net.URL;
 
 /**
  * This class contains some static factory methods for building a {@link

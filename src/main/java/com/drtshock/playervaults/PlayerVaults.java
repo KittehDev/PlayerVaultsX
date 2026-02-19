@@ -18,13 +18,7 @@
 
 package com.drtshock.playervaults;
 
-import com.drtshock.playervaults.commands.ConsoleCommand;
-import com.drtshock.playervaults.commands.ConvertCommand;
-import com.drtshock.playervaults.commands.DeleteCommand;
-import com.drtshock.playervaults.commands.HelpMeCommand;
-import com.drtshock.playervaults.commands.SignCommand;
-import com.drtshock.playervaults.commands.SignSetInfo;
-import com.drtshock.playervaults.commands.VaultCommand;
+import com.drtshock.playervaults.commands.*;
 import com.drtshock.playervaults.config.Loader;
 import com.drtshock.playervaults.config.file.Config;
 import com.drtshock.playervaults.config.file.Translation;
@@ -39,15 +33,11 @@ import com.drtshock.playervaults.vaultmanagement.EconomyOperations;
 import com.drtshock.playervaults.vaultmanagement.VaultManager;
 import com.drtshock.playervaults.vaultmanagement.VaultViewInfo;
 import com.google.gson.Gson;
-import net.kyori.adventure.audience.Audience;
+import dev.kitteh.cardboardbox.CardboardBox;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.Registry;
+import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -60,16 +50,9 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
-import dev.kitteh.cardboardbox.CardboardBox;
 import sun.misc.Unsafe;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -79,13 +62,7 @@ import java.nio.file.Path;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
@@ -197,6 +174,24 @@ public class PlayerVaults extends JavaPlugin {
                 }
             }
         }.runTaskTimer(this, 20, 20);
+
+        // Force save after an amount of time
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                long now = System.currentTimeMillis();
+                inVault.forEach((uuid, info) -> {
+                    Player p = Bukkit.getPlayer(UUID.fromString(uuid));
+                    if (p != null && p.isOnline()) {
+                        Inventory inv = p.getOpenInventory().getTopInventory();
+                        if (inv != null && inv.getViewers().size() >= 1) {
+                            // Player is still in the vault, force save after a timeout
+                            VaultManager.getInstance().saveVault(inv, p.getUniqueId().toString(), info.getNumber());
+                        }
+                    }
+                });
+            }
+        }.runTaskTimer(this, 6000, 6000);
 
         this.metrics = new Metrics(this, 6905);
         Plugin vault = getServer().getPluginManager().getPlugin("Vault");

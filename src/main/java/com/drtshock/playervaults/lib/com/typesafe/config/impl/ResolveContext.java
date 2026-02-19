@@ -1,13 +1,9 @@
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Set;
-
 import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
 import com.drtshock.playervaults.lib.com.typesafe.config.ConfigResolveOptions;
+
+import java.util.*;
 
 final class ResolveContext {
     final private ResolveMemos memos;
