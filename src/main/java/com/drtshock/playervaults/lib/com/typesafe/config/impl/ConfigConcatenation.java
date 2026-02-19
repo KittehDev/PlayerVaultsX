@@ -1,15 +1,11 @@
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
+import com.drtshock.playervaults.lib.com.typesafe.config.*;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigObject;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigOrigin;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigRenderOptions;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigValueType;
 
 /**
  * A ConfigConcatenation represents a list of values to be concatenated (see the

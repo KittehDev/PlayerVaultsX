@@ -3,22 +3,12 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
+import com.drtshock.playervaults.lib.com.typesafe.config.*;
+
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigIncludeContext;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigOrigin;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigParseOptions;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigSyntax;
+import java.util.*;
 
 final class ConfigParser {
     static AbstractConfigValue parse(ConfigNodeRoot document,

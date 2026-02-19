@@ -33,7 +33,8 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 
 public class AxVaultsConverter implements Converter {

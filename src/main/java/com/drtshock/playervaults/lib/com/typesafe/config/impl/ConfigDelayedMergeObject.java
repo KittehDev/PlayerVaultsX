@@ -3,18 +3,9 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import com.drtshock.playervaults.lib.com.typesafe.config.*;
 
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigList;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigMergeable;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigOrigin;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigRenderOptions;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigValue;
+import java.util.*;
 
 // This is just like ConfigDelayedMerge except we know statically
 // that it will turn out to be an object.

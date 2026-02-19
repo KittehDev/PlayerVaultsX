@@ -3,9 +3,9 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config;
 
-import java.util.Map;
-
 import com.drtshock.playervaults.lib.com.typesafe.config.impl.ConfigImpl;
+
+import java.util.Map;
 
 /**
  * This class holds some static factory methods for building {@link ConfigValue}

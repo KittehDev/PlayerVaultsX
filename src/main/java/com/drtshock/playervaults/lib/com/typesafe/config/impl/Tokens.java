@@ -3,11 +3,11 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
-import java.util.List;
-
 import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
 import com.drtshock.playervaults.lib.com.typesafe.config.ConfigOrigin;
 import com.drtshock.playervaults.lib.com.typesafe.config.ConfigValueType;
+
+import java.util.List;
 
 /* FIXME the way the subclasses of Token are private with static isFoo and accessors is kind of ridiculous. */
 final class Tokens {

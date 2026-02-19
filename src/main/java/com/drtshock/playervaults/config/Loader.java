@@ -22,12 +22,7 @@ import com.drtshock.playervaults.config.annotation.Comment;
 import com.drtshock.playervaults.config.annotation.ConfigName;
 import com.drtshock.playervaults.config.annotation.WipeOnReload;
 import com.drtshock.playervaults.config.file.Translation;
-import com.drtshock.playervaults.lib.com.typesafe.config.Config;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigFactory;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigRenderOptions;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigValue;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigValueFactory;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigValueType;
+import com.drtshock.playervaults.lib.com.typesafe.config.*;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -38,14 +33,7 @@ import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class Loader {
     public static void loadAndSave(@NonNull String fileName, @NonNull Object config) throws IOException, IllegalAccessException {

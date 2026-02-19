@@ -3,20 +3,11 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
+import com.drtshock.playervaults.lib.com.typesafe.config.*;
+
 import java.io.ObjectStreamException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigList;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigOrigin;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigRenderOptions;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigValue;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigValueType;
+import java.util.*;
 
 final class SimpleConfigList extends AbstractConfigValue implements ConfigList, Container, Serializable {
 

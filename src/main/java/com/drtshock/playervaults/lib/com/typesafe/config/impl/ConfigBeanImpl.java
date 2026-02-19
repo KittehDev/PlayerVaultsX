@@ -1,30 +1,15 @@
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
+import com.drtshock.playervaults.lib.com.typesafe.config.*;
+import com.drtshock.playervaults.lib.com.typesafe.config.Optional;
+
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.*;
 import java.time.Duration;
-import java.util.Set;
-
-import com.drtshock.playervaults.lib.com.typesafe.config.Config;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigObject;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigList;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigMemorySize;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigValue;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigValueType;
-import com.drtshock.playervaults.lib.com.typesafe.config.Optional;
+import java.util.*;
 
 /**
  * Internal implementation detail, not ABI stable, do not touch.

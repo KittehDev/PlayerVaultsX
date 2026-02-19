@@ -3,21 +3,15 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
+import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
+import com.drtshock.playervaults.lib.com.typesafe.config.ConfigOrigin;
+import com.drtshock.playervaults.lib.com.typesafe.config.impl.SerializedConfigValue.SerializedField;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigOrigin;
-import com.drtshock.playervaults.lib.com.typesafe.config.impl.SerializedConfigValue.SerializedField;
+import java.util.*;
 
 // it would be cleaner to have a class hierarchy for various origin types,
 // but was hoping this would be enough simpler to be a little messy. eh.

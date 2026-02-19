@@ -3,32 +3,10 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
-import java.io.DataInputStream;
-import java.io.DataOutput;
-import java.io.DataOutputStream;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.NotSerializableException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.ObjectStreamException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.drtshock.playervaults.lib.com.typesafe.config.*;
 
-import com.drtshock.playervaults.lib.com.typesafe.config.Config;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigList;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigObject;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigOrigin;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigValue;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigValueType;
+import java.io.*;
+import java.util.*;
 
 /**
  * Deliberately shoving all the serialization code into this class instead of

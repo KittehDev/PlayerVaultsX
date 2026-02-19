@@ -3,13 +3,9 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.drtshock.playervaults.lib.com.typesafe.config.ConfigValueType;
+
+import java.util.*;
 
 /**
  * Default automatic type transformations.

@@ -1,8 +1,8 @@
 package com.drtshock.playervaults.lib.com.typesafe.config;
 
-import java.util.List;
-
 import com.drtshock.playervaults.lib.com.typesafe.config.impl.ConfigImplUtil;
+
+import java.util.List;
 
 /**
  * Contains static utility methods.

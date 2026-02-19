@@ -3,6 +3,8 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
+import com.drtshock.playervaults.lib.com.typesafe.config.*;
+
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -12,25 +14,8 @@ import java.time.Duration;
 import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAmount;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
-
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigList;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigMemorySize;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigMergeable;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigObject;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigOrigin;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigResolveOptions;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigValue;
-import com.drtshock.playervaults.lib.com.typesafe.config.ConfigValueType;
-import com.drtshock.playervaults.lib.com.typesafe.config.Config;
 
 /**
  * One thing to keep in mind in the future: as Collection-like APIs are added

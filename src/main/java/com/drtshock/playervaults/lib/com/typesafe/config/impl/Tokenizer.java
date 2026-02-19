@@ -3,17 +3,13 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
-
 import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
 import com.drtshock.playervaults.lib.com.typesafe.config.ConfigOrigin;
 import com.drtshock.playervaults.lib.com.typesafe.config.ConfigSyntax;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.util.*;
 
 final class Tokenizer {
     // this exception should not leave this file

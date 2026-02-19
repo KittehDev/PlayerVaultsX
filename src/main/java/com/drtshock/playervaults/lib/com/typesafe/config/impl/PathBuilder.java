@@ -3,9 +3,9 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
-import java.util.Stack;
-
 import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
+
+import java.util.Stack;
 
 final class PathBuilder {
     // the keys are kept "backward" (top of stack is end of path)

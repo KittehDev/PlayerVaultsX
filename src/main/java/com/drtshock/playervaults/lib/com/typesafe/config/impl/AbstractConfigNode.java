@@ -4,6 +4,7 @@
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
 import com.drtshock.playervaults.lib.com.typesafe.config.parser.ConfigNode;
+
 import java.util.Collection;
 
 abstract class AbstractConfigNode implements ConfigNode {

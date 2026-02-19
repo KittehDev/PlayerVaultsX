@@ -3,15 +3,15 @@
  */
 package com.drtshock.playervaults.lib.com.typesafe.config.impl;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
 import com.drtshock.playervaults.lib.com.typesafe.config.ConfigException;
 import com.drtshock.playervaults.lib.com.typesafe.config.ConfigOrigin;
 import com.drtshock.playervaults.lib.com.typesafe.config.ConfigRenderOptions;
 import com.drtshock.playervaults.lib.com.typesafe.config.ConfigValueType;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * The issue here is that we want to first merge our stack of config files, and
