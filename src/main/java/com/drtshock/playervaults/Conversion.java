@@ -28,13 +28,13 @@ import org.bukkit.util.io.BukkitObjectInputStream;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
-import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -214,7 +214,7 @@ class Conversion {
                     ItemStack[] contents;
                     if (recent) {
                         String data = uuidFile.getString(key);
-                        ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64Coder.decodeLines(data));
+                        ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64.getMimeDecoder().decode(data));
                         BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream);
                         contents = new ItemStack[dataInput.readInt()];
                         // Read the serialized inventory
@@ -231,7 +231,7 @@ class Conversion {
                         }
                         contents = OldestSerialization.getItems(data);
                     }
-                    String newData = Base64Coder.encodeLines(CardboardBoxSerialization.writeInventory(contents));
+                    String newData = Base64.getMimeEncoder().encodeToString(CardboardBoxSerialization.writeInventory(contents));
                     uuidFile.set(key, newData);
                     vaults++;
                 } catch (Exception e) {

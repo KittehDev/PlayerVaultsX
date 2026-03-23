@@ -5,7 +5,6 @@ import dev.kitteh.cardboardbox.CardboardBox;
 import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -13,6 +12,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
@@ -23,7 +23,7 @@ public class CardboardBoxSerialization {
 
     public static String toStorage(Inventory inventory, String target) {
         try {
-            return Base64Coder.encodeLines(writeInventory(inventory.getContents()));
+            return Base64.getMimeEncoder().encodeToString(writeInventory(inventory.getContents()));
         } catch (Exception e) {
             throw PlayerVaults.getInstance().addException(new IllegalStateException("Failed to save items for " + target, e));
         }
@@ -39,7 +39,7 @@ public class CardboardBoxSerialization {
         }
 
         try {
-            DataInputStream input = new DataInputStream(new ByteArrayInputStream(Base64Coder.decodeLines(data)));
+            DataInputStream input = new DataInputStream(new ByteArrayInputStream(Base64.getMimeDecoder().decode(data)));
             ItemStack[] contents = new ItemStack[input.readInt()];
             List<BadData> exceptional = new ArrayList<>();
             for (int i = 0; i < contents.length; i++) {
@@ -52,7 +52,7 @@ public class CardboardBoxSerialization {
                     if (e.getMessage().startsWith("Cardboard Box")) {
                         throw e;
                     }
-                    exceptional.add(new BadData(e.getMessage(), Base64Coder.encodeLines(itemBytes)));
+                    exceptional.add(new BadData(e.getMessage(), Base64.getMimeEncoder().encodeToString(itemBytes)));
                     contents[i] = new ItemStack(Material.AIR);
                 }
             }
