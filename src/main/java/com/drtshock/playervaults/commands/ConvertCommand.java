@@ -21,6 +21,7 @@ package com.drtshock.playervaults.commands;
 import com.drtshock.playervaults.PlayerVaults;
 import com.drtshock.playervaults.converters.*;
 import com.drtshock.playervaults.util.Permission;
+import com.drtshock.playervaults.util.Scheduler;
 import com.drtshock.playervaults.vaultmanagement.VaultOperations;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -72,7 +73,7 @@ public class ConvertCommand implements CommandExecutor {
                 } else {
                     // Fork into background
                     this.plugin.getTL().convertBackground().title().send(sender);
-                    PlayerVaults.getInstance().getServer().getScheduler().runTaskLaterAsynchronously(PlayerVaults.getInstance(), () -> {
+                    Scheduler.runLaterAsync(() -> {
                         int converted = 0;
                         VaultOperations.setLocked(true);
                         for (Converter converter : applicableConverters) {

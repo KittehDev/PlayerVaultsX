@@ -20,6 +20,7 @@ package com.drtshock.playervaults.vaultmanagement;
 
 import com.drtshock.playervaults.PlayerVaults;
 import com.drtshock.playervaults.util.Permission;
+import com.drtshock.playervaults.util.Scheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
@@ -387,7 +388,7 @@ public class VaultOperations {
         }
         PlayerCount newCount = new PlayerCount(vaultCount, Instant.now());
         countCache.put(uuid, newCount);
-        PlayerVaults.getInstance().getServer().getScheduler().runTaskLater(PlayerVaults.getInstance(), () -> {
+        Scheduler.runLaterAsync(() -> {
             if (countCache.get(uuid) == newCount) {
                 countCache.remove(uuid); // Do a lil cleanup to avoid the world's smallest memory leak
             }
