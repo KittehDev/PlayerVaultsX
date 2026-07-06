@@ -21,6 +21,7 @@ package com.drtshock.playervaults.commands;
 import com.drtshock.playervaults.PlayerVaults;
 import com.drtshock.playervaults.util.ComponentDispatcher;
 import com.drtshock.playervaults.util.Permission;
+import com.drtshock.playervaults.util.Scheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -30,7 +31,6 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.kitteh.pastegg.PasteBuilder;
 import org.kitteh.pastegg.PasteContent;
 import org.kitteh.pastegg.PasteFile;
@@ -77,7 +77,7 @@ public class HelpMeCommand implements CommandExecutor {
                 mainInfo.append("  ").append(plugin.getDescription().getAuthors()).append('\n');
             }
 
-            new BukkitRunnable() {
+            Scheduler.runAsync(new Runnable() {
                 private final PasteBuilder builder = new PasteBuilder().name("PlayerVaultsX Debug")
                         .visibility(Visibility.UNLISTED)
                         .expires(ZonedDateTime.now(ZoneOffset.UTC).plusDays(3));
@@ -106,31 +106,23 @@ public class HelpMeCommand implements CommandExecutor {
                         }
                         add("config.conf", getFile(dataPath.resolve("config.conf")));
                         PasteBuilder.PasteResult result = builder.build();
-                        new BukkitRunnable() {
-                            @Override
-                            public void run() {
-                                if (result.getPaste().isPresent()) {
-                                    String delKey = result.getPaste().get().getDeletionKey().orElse("No deletion key");
-                                    String url = "https://paste.gg/anonymous/" + result.getPaste().get().getId();
-                                    ComponentDispatcher.send(sender, Component.text("URL generated: ").append(Component.text().clickEvent(ClickEvent.openUrl(url)).content(url)));
-                                    ComponentDispatcher.send(sender, MiniMessage.miniMessage().deserialize((sender instanceof Player ? "<rainbow>" : "<green>") + "Deletion key:</rainbow> " + delKey));
-                                } else {
-                                    ComponentDispatcher.send(sender, MiniMessage.miniMessage().deserialize("<red>Failed to generate output. See console for details."));
-                                    PlayerVaults.getInstance().getLogger().warning("Received: " + result.getMessage());
-                                }
+                        Scheduler.run(() -> {
+                            if (result.getPaste().isPresent()) {
+                                String delKey = result.getPaste().get().getDeletionKey().orElse("No deletion key");
+                                String url = "https://paste.gg/anonymous/" + result.getPaste().get().getId();
+                                ComponentDispatcher.send(sender, Component.text("URL generated: ").append(Component.text().clickEvent(ClickEvent.openUrl(url)).content(url)));
+                                ComponentDispatcher.send(sender, MiniMessage.miniMessage().deserialize((sender instanceof Player ? "<rainbow>" : "<green>") + "Deletion key:</rainbow> " + delKey));
+                            } else {
+                                ComponentDispatcher.send(sender, MiniMessage.miniMessage().deserialize("<red>Failed to generate output. See console for details."));
+                                PlayerVaults.getInstance().getLogger().warning("Received: " + result.getMessage());
                             }
-                        }.runTask(PlayerVaults.getInstance());
+                        });
                     } catch (Exception e) {
                         PlayerVaults.getInstance().getLogger().log(Level.SEVERE, "Failed to execute debug command", e);
-                        new BukkitRunnable() {
-                            @Override
-                            public void run() {
-                                ComponentDispatcher.send(sender, MiniMessage.miniMessage().deserialize("<red>Failed to generate output. See console for details."));
-                            }
-                        }.runTask(PlayerVaults.getInstance());
+                        Scheduler.run(() -> ComponentDispatcher.send(sender, MiniMessage.miniMessage().deserialize("<red>Failed to generate output. See console for details.")));
                     }
                 }
-            }.runTaskAsynchronously(PlayerVaults.getInstance());
+            });
         }
         return true;
     }
