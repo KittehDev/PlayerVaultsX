@@ -34,9 +34,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.*;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -129,43 +127,100 @@ public class Listeners implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player)) {
+        if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
-
-        Player player = (Player) event.getWhoClicked();
-
         Inventory clickedInventory = event.getClickedInventory();
-        if (clickedInventory != null) {
-            VaultViewInfo info = PlayerVaults.getInstance().getInVault().get(player.getUniqueId().toString());
-            if (info != null) {
-                int num = info.getNumber();
-                String inventoryTitle = event.getView().getTitle();
-                String title = this.plugin.getVaultTitle(String.valueOf(num));
-                if (inventoryTitle.equalsIgnoreCase(title)) {
-                    ItemStack[] items = new ItemStack[2];
-                    items[0] = event.getCurrentItem();
-                    if (event.getHotbarButton() > -1 && event.getWhoClicked().getInventory().getItem(event.getHotbarButton()) != null) {
-                        items[1] = event.getWhoClicked().getInventory().getItem(event.getHotbarButton());
-                    }
-                    if (event.getClick().name().equals("SWAP_OFFHAND")) {
-                        items[1] = event.getWhoClicked().getInventory().getItemInOffHand();
-                    }
+        if (clickedInventory == null) return;
 
-                    if (!player.hasPermission(Permission.BYPASS_BLOCKED_ITEMS)) {
-                        for (ItemStack item : items) {
-                            if (item == null) {
-                                continue;
-                            }
-                            if (this.isBlocked(player, item, info)) {
-                                event.setCancelled(true);
-                                return;
-                            }
-                        }
-                    }
+        VaultViewInfo info = PlayerVaults.getInstance().getInVault().get(player.getUniqueId().toString());
+        if (info == null) return;
+
+        int num = info.getNumber();
+        String inventoryTitle = event.getView().getTitle();
+        String title = this.plugin.getVaultTitle(String.valueOf(num));
+
+        if (!inventoryTitle.equalsIgnoreCase(title)) return;
+        InventoryAction action = event.getAction();
+
+        // Block risky actions that are commonly used in duplication exploits
+        switch (action) {
+            case MOVE_TO_OTHER_INVENTORY,
+                 COLLECT_TO_CURSOR,
+                 HOTBAR_SWAP,
+                 HOTBAR_MOVE_AND_READD -> {
+                event.setCancelled(true);
+                // Force inventory sync to prevent client desync (ghost items)
+                this.sync(player);
+                return;
+            }
+        }
+
+        ItemStack current = event.getCurrentItem();
+        // Cursor item must be validated as well
+        ItemStack cursor = event.getCursor();
+        ItemStack hotbar = null;
+
+        if (event.getHotbarButton() > -1) {
+            hotbar = player.getInventory().getItem(event.getHotbarButton());
+        }
+
+        // Handle offhand swap, which can bypass normal checks
+        if (event.getClick() == ClickType.SWAP_OFFHAND) {
+            hotbar = player.getInventory().getItemInOffHand();
+        }
+
+        if (!player.hasPermission(Permission.BYPASS_BLOCKED_ITEMS)) {
+            // Include cursor and hotbar items
+            for (ItemStack item : new ItemStack[]{current, cursor, hotbar}) {
+                if (item == null) continue;
+
+                if (this.isBlocked(player, item, info)) {
+                    event.setCancelled(true);
+                    // Ensure client is resynced after cancellation
+                    this.sync(player);
+                    return;
                 }
             }
         }
+        int rawSlot = event.getRawSlot();
+        if (rawSlot < 0) return;
+
+        int topSize = event.getView().getTopInventory().getSize();
+
+        // Prevent placing items into the player inventory while interacting with the vault
+        // This blocks certain cross-inventory interactions used in dupes
+        if (rawSlot >= topSize && action == InventoryAction.PLACE_ALL) {
+            event.setCancelled(true);
+            sync(player);
+            return;
+        }
+
+        // Basic anti-duplication sanity check using item count comparison
+        int before = this.countItems(player);
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            int after = this.countItems(player);
+
+            // If item count increased more than expected, assume a possible duplication
+            if (after > before + 1) {
+                player.updateInventory(); // Force full resync
+                plugin.getLogger().warning(player.getName() + " possible dupe detected!");
+            }
+        });
+    }
+
+    private void sync(Player player) {
+        Bukkit.getScheduler().runTask(plugin, player::updateInventory);
+    }
+
+    private int countItems(Player player) {
+        int total = 0;
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null) {
+                total += item.getAmount();
+            }
+        }
+        return total;
     }
 
     @EventHandler(ignoreCancelled = true)
